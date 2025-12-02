@@ -15,19 +15,62 @@
       const useEffect = React.useEffect;
       
       function App() {
-	  const [time, setTime] = useState('');
+	  //const [time, setTime] = useState({ticker: 'AMZN', name: 'Amazon', price: 281, volume: 122});
+    const [time, setTime] = useState(" ");
 	  useEffect(() => {
-              const eventSource = new EventSource('http://localhost:5000/events');
+              const eventSource = new EventSource('http://localhost:31415/stocks');
               eventSource.onmessage = (event) => {
+      console.log(event);
 		  const data = JSON.parse(event.data);
-		  setTime(data.time);
+      console.log(data.ticker);
+		  setTime(data);
               };
               return () => eventSource.close();
 	  }, []);
 	  return (
 		  <div>
-		  <h1>Server-Sent Events Demo</h1>
-		  <p>Current Time: {time}</p>
+		  <h1>Stock Data</h1>
+		  <p>Current Ticker: {time.ticker}</p>
+      <p>Current Name:   {time.name}</p>
+      <p>Current Price:  {time.price}</p>
+      <p>Current Volume: {time.volume}</p>
+
+      <table>
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Name</th>
+          <th>Price</th>
+          <th>Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IBM</td>
+          <td>IBM name</td>
+          <td>IBM price</td>
+          <td>IBM volume</td>
+        </tr>
+        <tr>
+          <td>AMZN</td>
+          <td>AMZN name</td>
+          <td>AMZN price</td>
+          <td>AMZN volume</td>
+        </tr>
+        <tr>
+          <td>DOW</td>
+          <td>DOW name</td>
+          <td>DOW price</td>
+          <td>DOW volume</td>
+        </tr>
+        <tr>
+          <td>NASDAQ</td>
+          <td>NASDAQ name</td>
+          <td>NASDAQ price</td>
+          <td>NASDAQ volume</td>
+        </tr>
+      </tbody>
+      </table>
 		  </div>
 	  );
       }
