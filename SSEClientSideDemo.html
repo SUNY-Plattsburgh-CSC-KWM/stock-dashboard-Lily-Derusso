@@ -3,6 +3,23 @@
   <head>
     <title>SSE Demo</title>
     <meta charset="utf-8" />
+    <style>
+      #StockData{
+        border: solid black;
+        border-collapse: collapse;
+        
+      }
+      tr td {
+        border: solid black;
+        border-collapse: collapse;
+        padding: 10px;
+        width: 80px;
+        height: 40px;
+      }
+      th {
+        border: solid black;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
@@ -23,6 +40,19 @@
       console.log(event);
 		  const data = JSON.parse(event.data);
       console.log(data.ticker);
+      if (data.ticker == "AMZN"){
+        document.getElementById("AMZN price").innerHTML    = "$" + data.price;
+        document.getElementById("AMZN volume").innerHTML   = data.volume + " units";
+      } else if (data.ticker == "IBM"){
+        document.getElementById("IBM price").innerHTML     = "$" + data.price;
+        document.getElementById("IBM volume").innerHTML    = data.volume + " units";
+      } else if (data.ticker == "DOW"){
+        document.getElementById("DOW price").innerHTML     = "$" + data.price;
+        document.getElementById("DOW volume").innerHTML    = data.volume + " units";
+      } else if (data.ticker == "NASDAQ"){
+        document.getElementById("NASDAQ price").innerHTML  = "$" + data.price;
+        document.getElementById("NASDAQ volume").innerHTML = data.volume + " units";
+      }
 		  setTime(data);
               };
               return () => eventSource.close();
@@ -35,39 +65,40 @@
       <p>Current Price:  {time.price}</p>
       <p>Current Volume: {time.volume}</p>
 
-      <table>
+      <table id="StockData">
       <thead>
         <tr>
           <th>Ticker</th>
           <th>Name</th>
-          <th>Price</th>
-          <th>Volume</th>
+          <th>Last Trade Price</th>
+          <th>Last Trade Volume</th>
+          <th>Trends</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>IBM</td>
-          <td>IBM name</td>
-          <td>IBM price</td>
-          <td>IBM volume</td>
-        </tr>
-        <tr>
+        <tr id="AMZNstocks">
           <td>AMZN</td>
-          <td>AMZN name</td>
-          <td>AMZN price</td>
-          <td>AMZN volume</td>
+          <td>Amazon</td>
+          <td id="AMZN price">Awaiting Price</td>
+          <td id="AMZN volume">Awaiting Volume</td>
         </tr>
-        <tr>
+        <tr id="DOWstocks">
           <td>DOW</td>
-          <td>DOW name</td>
-          <td>DOW price</td>
-          <td>DOW volume</td>
+          <td>Dow Jones Industrial Average</td>
+          <td id="DOW price">Awaiting Price</td>
+          <td id="DOW volume">Awaiting Volume</td>
         </tr>
-        <tr>
+        <tr id="IBMstocks">
+          <td>IBM</td>
+          <td>International Business Machines</td>
+          <td id="IBM price">Awaiting Price</td>
+          <td id="IBM volume">Awaiting Volume</td>
+        </tr>
+        <tr id="NASDAQstocks">
           <td>NASDAQ</td>
-          <td>NASDAQ name</td>
-          <td>NASDAQ price</td>
-          <td>NASDAQ volume</td>
+          <td>Nasdaq Composite</td>
+          <td id="NASDAQ price">Awaiting Price</td>
+          <td id="NASDAQ volume">Awaiting Volume</td>
         </tr>
       </tbody>
       </table>
