@@ -1,28 +1,61 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SSE Demo</title>
+    <title>Stock Exchange</title>
     <meta charset="utf-8" />
     <style>
+      h1 {
+        text-align: center;
+      }
+
+      .incomingData {
+        display: flex;
+        justify-content: flex-start;
+        gap: 30px;
+      }
+
+      .incomingData p {
+        min-width: 150px;
+        white-space: nowrap;
+        
+      }
+
+      body {
+        display: grid;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .Sparkline {
+        width: 200px;
+        height: 80;
+        margin: 2px;
+      }
       #StockData{
         border: solid black;
         border-collapse: collapse;
+        font-size: 16px;
         
       }
       tr td {
         border: solid black;
         border-collapse: collapse;
-        padding: 10px;
-        width: 80px;
-        height: 40px;
+        padding: 15px;
+        width: 120px;
+        height: 60px;
       }
       th {
         border: solid black;
+        padding: 15px;
+        font-size: 16px;
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="react/react.js"></script>
     <script src="react/react-dom.js"></script>
     <script src="react/babel.js"></script>
@@ -30,40 +63,124 @@
 
       const useState = React.useState;
       const useEffect = React.useEffect;
+
+      function DrawSpark(selector, options = {}) {
+        const width = options.width || 200;
+        const height = options.height || 80;
+        const maxPoints = options.maxPoints || 50;
+
+        const margin = { top: 4, right: 4, bottom: 4, left: 4 };
+
+        let data = [];
+
+        const svg = d3.select(selector)
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const x = d3.scaleLinear()
+            .range([margin.left , width - margin.right]);
+        const y = d3.scaleLinear()
+            .range([height - margin.bottom, margin.top]);
+
+        const line = d3.line()
+            .x((d, i) => x(i))
+            .y(d => y(d))
+            .curve(d3.curveMonotoneX);
+
+        const path = svg.append("path")
+            .attr("fill", "none")
+            .attr("stroke", options.color || "steelblue")
+            .attr("stroke-width", 2.5);
+
+        function update(newPoint) {
+            data.push(newPoint);
+
+            if (data.length > maxPoints) data.shift();
+
+            x.domain([0, data.length - 1]);
+            y.domain(d3.extent(data));
+
+            if (data.length > 1) {
+              const lastChange = data[data.length - 1] - data[data.length - 2];
+              path.attr("stroke", lastChange >= 0 ? "green" : "red");
+            }
+
+            path
+              .datum(data)
+              .transition()
+              .duration(1000)
+              .attr("d", line);
+
+              const lastValue = data[data.length - 1];
+
+              const circle = svg.selectAll("circle").data([lastValue]);
+
+              circle.join("circle")
+                .attr("cx", x(data.length - 1))
+                .attr("cy", y(lastValue))
+                .attr("r", 4)
+                .attr("fill", path.attr("stroke"));  // same color as line
+        }
+        return { update };
+      }
+
+
+
       
       function App() {
 	  //const [time, setTime] = useState({ticker: 'AMZN', name: 'Amazon', price: 281, volume: 122});
+    const [sparklines, setSparklines] = useState(null);
+
     const [time, setTime] = useState(" ");
+
+    useEffect(() => {
+          const sl = {
+            AMZN:  DrawSpark("#AMZNspark",  { maxPoints: 40 }),
+            DOW:   DrawSpark("#DOWspark",   { maxPoints: 40 }),
+            IBM:   DrawSpark("#IBMspark",   { maxPoints: 40 }),
+            NASDAQ:DrawSpark("#NASDAQspark",{ maxPoints: 40 })
+          };
+          setSparklines(sl);
+        }, []);
+    
 	  useEffect(() => {
+              if (!sparklines) return;
               const eventSource = new EventSource('http://localhost:31415/stocks');
               eventSource.onmessage = (event) => {
       console.log(event);
 		  const data = JSON.parse(event.data);
-      console.log(data.ticker);
+      //console.log(data.ticker);
+      const newValue = Number(data.price);
       if (data.ticker == "AMZN"){
-        document.getElementById("AMZN price").innerHTML    = "$" + data.price;
-        document.getElementById("AMZN volume").innerHTML   = data.volume + " units";
+        document.getElementById("AMZN-price").innerHTML    = "$" + data.price;
+        document.getElementById("AMZN-volume").innerHTML   = data.volume + " units";
+        sparklines[data.ticker].update(newValue);
       } else if (data.ticker == "IBM"){
-        document.getElementById("IBM price").innerHTML     = "$" + data.price;
-        document.getElementById("IBM volume").innerHTML    = data.volume + " units";
+        document.getElementById("IBM-price").innerHTML     = "$" + data.price;
+        document.getElementById("IBM-volume").innerHTML    = data.volume + " units";
+        sparklines[data.ticker].update(newValue);
       } else if (data.ticker == "DOW"){
-        document.getElementById("DOW price").innerHTML     = "$" + data.price;
-        document.getElementById("DOW volume").innerHTML    = data.volume + " units";
+        document.getElementById("DOW-price").innerHTML     = "$" + data.price;
+        document.getElementById("DOW-volume").innerHTML    = data.volume + " units";
+        sparklines[data.ticker].update(newValue);
       } else if (data.ticker == "NASDAQ"){
-        document.getElementById("NASDAQ price").innerHTML  = "$" + data.price;
-        document.getElementById("NASDAQ volume").innerHTML = data.volume + " units";
+        document.getElementById("NASDAQ-price").innerHTML  = "$" + data.price;
+        document.getElementById("NASDAQ-volume").innerHTML = data.volume + " units";
+        sparklines[data.ticker].update(newValue);
       }
 		  setTime(data);
               };
               return () => eventSource.close();
-	  }, []);
+	  }, [sparklines]);
 	  return (
 		  <div>
 		  <h1>Stock Data</h1>
-		  <p>Current Ticker: {time.ticker}</p>
-      <p>Current Name:   {time.name}</p>
-      <p>Current Price:  {time.price}</p>
-      <p>Current Volume: {time.volume}</p>
+		  <div class="incomingData"><p>Current Ticker: {time.ticker}</p>
+      <p>Current Name:   {time.name}</p></div>
+      <div class="incomingData"></div>
+      <div class="incomingData"><p>Current Price:  ${time.price}</p>
+      <p>Current Volume: {time.volume}</p></div>
 
       <table id="StockData">
       <thead>
@@ -79,32 +196,37 @@
         <tr id="AMZNstocks">
           <td>AMZN</td>
           <td>Amazon</td>
-          <td id="AMZN price">Awaiting Price</td>
-          <td id="AMZN volume">Awaiting Volume</td>
+          <td id="AMZN-price">Awaiting Price</td>
+          <td id="AMZN-volume">Awaiting Volume</td>
+          <td><div class="Sparkline" id="AMZNspark"></div></td>
         </tr>
         <tr id="DOWstocks">
           <td>DOW</td>
           <td>Dow Jones Industrial Average</td>
-          <td id="DOW price">Awaiting Price</td>
-          <td id="DOW volume">Awaiting Volume</td>
+          <td id="DOW-price">Awaiting Price</td>
+          <td id="DOW-volume">Awaiting Volume</td>
+          <td><div class="Sparkline" id="DOWspark"></div></td>
         </tr>
         <tr id="IBMstocks">
           <td>IBM</td>
           <td>International Business Machines</td>
-          <td id="IBM price">Awaiting Price</td>
-          <td id="IBM volume">Awaiting Volume</td>
+          <td id="IBM-price">Awaiting Price</td>
+          <td id="IBM-volume">Awaiting Volume</td>
+          <td><div class="Sparkline" id="IBMspark"></div></td>
         </tr>
         <tr id="NASDAQstocks">
           <td>NASDAQ</td>
           <td>Nasdaq Composite</td>
-          <td id="NASDAQ price">Awaiting Price</td>
-          <td id="NASDAQ volume">Awaiting Volume</td>
+          <td id="NASDAQ-price">Awaiting Price</td>
+          <td id="NASDAQ-volume">Awaiting Volume</td>
+          <td><div class="Sparkline" id="NASDAQspark"></div></td>
         </tr>
       </tbody>
       </table>
 		  </div>
 	  );
       }
+
       ReactDOM.render(
               <App />,
 	  document.getElementById('app'));
